@@ -1012,6 +1012,19 @@ CEPH_RADOS_API int rados_ioctx_snap_rollback(rados_ioctx_t io, const char *oid,
 		                             const char *snapname);
 
 /**
+ * Rollback all objects to a pool snapshot
+ *
+ * The contents of the object will be the same as
+ * when the snapshot was taken.
+ *
+ * @param io the pool in which the object is stored
+ * @param snapname which snapshot to rollback to
+ * @returns 0 on success, negative error code on failure
+ */
+CEPH_RADOS_API int rados_ioctx_snap_rollback_all(rados_ioctx_t io,
+		                             const char *snapname);
+
+/**
  * @warning Deprecated: Use rados_ioctx_snap_rollback() instead
  */
 CEPH_RADOS_API int rados_rollback(rados_ioctx_t io, const char *oid,
@@ -1071,6 +1084,19 @@ CEPH_RADOS_API int rados_ioctx_selfmanaged_snap_remove(rados_ioctx_t io,
  */
 CEPH_RADOS_API int rados_ioctx_selfmanaged_snap_rollback(rados_ioctx_t io,
                                                          const char *oid,
+                                                         rados_snap_t snapid);
+
+/**
+ * Rollback all objects to a self-managed snapshot
+ *
+ * The contents of the object will be the same as
+ * when the snapshot was taken.
+ *
+ * @param io the pool in which the object is stored
+ * @param snapid which snapshot to rollback to
+ * @returns 0 on success, negative error code on failure
+ */
+CEPH_RADOS_API int rados_ioctx_selfmanaged_snap_rollback_all(rados_ioctx_t io,
                                                          rados_snap_t snapid);
 
 /**

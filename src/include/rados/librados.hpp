@@ -730,6 +730,8 @@ namespace librados
 
     int snap_rollback(const std::string& oid, const char *snapname);
 
+    int snap_rollback(const char *snapname);
+
     // Deprecated name kept for backward compatibility - same as snap_rollback()
     int rollback(const std::string& oid, const char *snapname)
       __attribute__ ((deprecated));
@@ -739,6 +741,7 @@ namespace librados
     int selfmanaged_snap_remove(uint64_t snapid);
 
     int selfmanaged_snap_rollback(const std::string& oid, uint64_t snapid);
+    int selfmanaged_snap_rollback(uint64_t snapid);
 
     // Advisory locking on rados objects.
     int lock_exclusive(const std::string &oid, const std::string &name,

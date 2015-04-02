@@ -1423,6 +1423,11 @@ int librados::IoCtx::snap_rollback(const std::string& oid, const char *snapname)
   return io_ctx_impl->rollback(oid, snapname);
 }
 
+int librados::IoCtx::snap_rollback(const char *snapname)
+{
+  return io_ctx_impl->rollback(snapname);
+}
+
 // Deprecated name kept for backward compatibility
 int librados::IoCtx::rollback(const std::string& oid, const char *snapname)
 {
@@ -1444,6 +1449,12 @@ int librados::IoCtx::selfmanaged_snap_rollback(const std::string& oid, uint64_t 
   return io_ctx_impl->selfmanaged_snap_rollback_object(oid,
 						       io_ctx_impl->snapc,
 						       snapid);
+}
+
+int librados::IoCtx::selfmanaged_snap_rollback(uint64_t snapid)
+{
+  return io_ctx_impl->selfmanaged_snap_rollback_nobjects(io_ctx_impl->snapc,
+                                                       snapid);
 }
 
 int librados::IoCtx::lock_exclusive(const std::string &oid, const std::string &name,
@@ -3135,6 +3146,15 @@ extern "C" int rados_ioctx_snap_rollback(rados_ioctx_t io, const char *oid,
   return retval;
 }
 
+extern "C" int rados_ioctx_snap_rollback_all(rados_ioctx_t io, const char *snapname)
+{
+  tracepoint(librados, rados_ioctx_snap_rollback_all_enter, io, snapname);
+  librados::IoCtxImpl *ctx = (librados::IoCtxImpl *)io;
+  int retval = ctx->rollback(snapname);
+  tracepoint(librados, rados_ioctx_snap_rollback_exit, retval);
+  return retval;
+}
+
 // Deprecated name kept for backward compatibility
 extern "C" int rados_rollback(rados_ioctx_t io, const char *oid,
 			      const char *snapname)
@@ -3169,6 +3189,16 @@ extern "C" int rados_ioctx_selfmanaged_snap_rollback(rados_ioctx_t io,
   tracepoint(librados, rados_ioctx_selfmanaged_snap_rollback_enter, io, oid, snapid);
   librados::IoCtxImpl *ctx = (librados::IoCtxImpl *)io;
   int retval = ctx->selfmanaged_snap_rollback_object(oid, ctx->snapc, snapid);
+  tracepoint(librados, rados_ioctx_selfmanaged_snap_rollback_exit, retval);
+  return retval;
+}
+
+extern "C" int rados_ioctx_selfmanaged_snap_rollback_all(rados_ioctx_t io,
+						     uint64_t snapid)
+{
+  tracepoint(librados, rados_ioctx_selfmanaged_snap_rollback_all_enter, io, snapid);
+  librados::IoCtxImpl *ctx = (librados::IoCtxImpl *)io;
+  int retval = ctx->selfmanaged_snap_rollback_nobjects(ctx->snapc, snapid);
   tracepoint(librados, rados_ioctx_selfmanaged_snap_rollback_exit, retval);
   return retval;
 }
