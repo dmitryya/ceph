@@ -71,6 +71,7 @@ void usage(ostream& out)
 "   lssnap                           list snaps\n"
 "   mksnap <snap-name>               create snap <snap-name>\n"
 "   rmsnap <snap-name>               remove snap <snap-name>\n"
+"   rollback <snap-name>             roll entire pool to snap <snap-name>\n"
 "\n"
 "OBJECT COMMANDS\n"
 "   get <obj-name> [outfile]         fetch object\n"
@@ -2229,17 +2230,30 @@ static int rados_tool_common(const std::map < std::string, std::string > &opts,
   }
 
   else if (strcmp(nargs[0], "rollback") == 0) {
-    if (!pool_name || nargs.size() < 3)
+    const char *snap;
+
+    if (!pool_name)
       usage_exit();
 
-    ret = io_ctx.snap_rollback(nargs[1], nargs[2]);
+    switch (nargs.size()) {
+      case 3:
+        snap = nargs[2];
+        ret = io_ctx.snap_rollback(nargs[1], snap);
+        break;
+      case 2:
+        snap = nargs[1];
+        ret = io_ctx.snap_rollback(snap);
+        break;
+      default:
+        usage_exit();
+    }
     if (ret < 0) {
-      cerr << "error rolling back pool " << pool_name << " to snapshot " << nargs[1]
+      cerr << "error rolling back pool " << pool_name << " to snapshot " << snap
 	   << cpp_strerror(ret) << std::endl;
       goto out;
     }
     cout << "rolled back pool " << pool_name
-	 << " to snapshot " << nargs[2] << std::endl;
+	 << " to snapshot " << snap << std::endl;
   }
   else if (strcmp(nargs[0], "bench") == 0) {
     if (!pool_name || nargs.size() < 3)
