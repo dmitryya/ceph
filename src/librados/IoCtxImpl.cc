@@ -14,6 +14,7 @@
 
 #include <limits.h>
 
+#include "common/errno.h"
 #include "IoCtxImpl.h"
 
 #include "librados/AioCompletionImpl.h"
@@ -254,6 +255,63 @@ int librados::IoCtxImpl::selfmanaged_snap_rollback_object(const object_t& oid,
   return reply;
 }
 
+#define RADOS_LIST_MAX_ENTRIES 1024
+
+int librados::IoCtxImpl::selfmanaged_snap_rollback_nobjects(::SnapContext& snapc,
+							  uint64_t snapid)
+{
+  int ret;
+  Objecter::NListContext nlc;
+
+  if (oloc.nspace != librados::all_nspaces)
+    return selfmanaged_snap_rollback_objects(snapc, snapid);
+
+  nlc.pool_id = poolid;
+  nlc.pool_snap_seq = snap_seq;
+  while (!nlc.at_end_of_pool) {
+    ret = nlist(&nlc, RADOS_LIST_MAX_ENTRIES);
+    if (ret < 0)
+      return ret;
+    while(!nlc.list.empty()) {
+      ret = selfmanaged_snap_rollback_object(nlc.list.front().get_oid(), snapc, snapid);
+      if (ret < 0)
+        return ret;
+      nlc.list.pop_front();
+    }
+  }
+
+  return ret;
+}
+
+int librados::IoCtxImpl::selfmanaged_snap_rollback_objects(::SnapContext& snapc,
+							  uint64_t snapid)
+{
+  int ret;
+  Objecter::ListContext lc;
+
+  if (oloc.nspace == librados::all_nspaces) {
+    ostringstream oss;
+    oss << "rados returned " << cpp_strerror(-EINVAL);
+    throw std::runtime_error(oss.str());
+  }
+
+  lc.pool_id = poolid;
+  lc.pool_snap_seq = snap_seq;
+  while (!lc.at_end_of_pool) {
+    ret = list(&lc, RADOS_LIST_MAX_ENTRIES);
+    if (ret < 0)
+      return ret;
+    while(!lc.list.empty()) {
+      ret = selfmanaged_snap_rollback_object(lc.list.front().first, snapc, snapid);
+      if (ret < 0)
+        return ret;
+      lc.list.pop_front();
+    }
+  }
+
+  return ret;
+}
+
 int librados::IoCtxImpl::rollback(const object_t& oid, const char *snapName)
 {
   snapid_t snap;
@@ -265,6 +323,19 @@ int librados::IoCtxImpl::rollback(const object_t& oid, const char *snapName)
   string sName(snapName);
 
   return selfmanaged_snap_rollback_object(oid, snapc, snap);
+}
+
+int librados::IoCtxImpl::rollback(const char *snapName)
+{
+  snapid_t snap;
+
+  int r = objecter->pool_snap_by_name(poolid, snapName, &snap);
+  if (r < 0) {
+    return r;
+  }
+  string sName(snapName);
+
+  return selfmanaged_snap_rollback_nobjects(snapc, snap);
 }
 
 int librados::IoCtxImpl::selfmanaged_snap_remove(uint64_t snapid)
